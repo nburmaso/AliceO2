@@ -9,16 +9,13 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#ifdef __CLING__
+#include "FCTBase/DPLAlpideParam.h"
 
-#pragma link off all globals;
-#pragma link off all classes;
-#pragma link off all functions;
+namespace o2::fct
+{
 
-#pragma link C++ class o2::fct::FCTLayer + ;
-#pragma link C++ class o2::fct::Detector + ;
-#pragma link C++ class o2::fct::Digitizer + ;
-#pragma link C++ class o2::fct::DigitizerTask + ;
-#pragma link C++ class o2::base::DetImpl < o2::fct::Detector> + ;
+// this makes sure that the constructor of the parameters is statically called
+// so that these params are part of the parameter database
+static auto& sAlpideParamFCT = o2::fct::DPLAlpideParam<o2::detectors::DetID::FCT>::Instance();
 
-#endif
+} // namespace  o2::fct

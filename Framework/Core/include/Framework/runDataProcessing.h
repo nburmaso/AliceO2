@@ -225,7 +225,7 @@ int main(int argc, char** argv)
   using namespace o2::framework;
   using namespace boost::program_options;
 
-  static bool noCatch = getenv("O2_NO_CATCHALL_EXCEPTIONS") && strcmp(getenv("O2_NO_CATCHALL_EXCEPTIONS"), "0");
+  static bool noCatch = true; // getenv("O2_NO_CATCHALL_EXCEPTIONS") && strcmp(getenv("O2_NO_CATCHALL_EXCEPTIONS"), "0");
   int result = 1;
   if (noCatch) {
     try {

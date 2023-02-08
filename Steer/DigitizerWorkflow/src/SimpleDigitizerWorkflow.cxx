@@ -44,6 +44,9 @@
 // for ITS3
 #include "ITS3DigitizerSpec.h"
 #include "ITS3Workflow/DigitWriterSpec.h"
+// for FCT
+#include "FCTDigitizerSpec.h"
+#include "FCTWorkflow/DigitWriterSpec.h"
 #endif
 
 // for TOF
@@ -598,6 +601,12 @@ WorkflowSpec defineDataProcessing(ConfigContext const& configcontext)
     specs.emplace_back(o2::its3::getITS3DigitizerSpec(fanoutsize++, mctruth));
     // // connect ITS digit writer
     specs.emplace_back(o2::its3::getITS3DigitWriterSpec(mctruth));
+  }
+  // the FCT part
+  if (isEnabled(o2::detectors::DetID::FCT)) {
+    detList.emplace_back(o2::detectors::DetID::FCT);
+    specs.emplace_back(o2::fct::getFCTDigitizerSpec(fanoutsize++, mctruth));
+    specs.emplace_back(o2::fct::getFCTDigitWriterSpec(mctruth));
   }
 #endif
 

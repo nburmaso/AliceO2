@@ -173,6 +173,7 @@ template <>
 struct UseShm<o2::fct::Detector> {
   static constexpr bool value = true;
 };
+
 } // namespace base
 } // namespace o2
 #endif

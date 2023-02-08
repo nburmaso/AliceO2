@@ -59,6 +59,7 @@ void SimConfig::initOptions(boost::program_options::options_description& options
     "asservice", bpo::value<bool>()->default_value(false), "run in service/server mode")(
     "noGeant", bpo::bool_switch(), "prohibits any Geant transport/physics (by using tight cuts)")(
     "forwardKine", bpo::bool_switch(), "forward kinematics on a FairMQ channel")(
+    "isRun5", bpo::bool_switch()->default_value(false), "Enable Run 5 upgrades")(
     "noDiscOutput", bpo::bool_switch(), "switch off writing sim results to disc (useful in combination with forwardKine)");
   options.add_options()("fromCollContext", bpo::value<std::string>()->default_value(""), "Use a pregenerated collision context to infer number of events to simulate, how to embedd them, the vertex position etc. Takes precedence of other options such as \"--nEvents\".");
 }
@@ -183,6 +184,7 @@ bool SimConfig::resetFromParsedMap(boost::program_options::variables_map const& 
   mConfigData.mNoGeant = vm["noGeant"].as<bool>();
 
   // get final set of active Modules
+  mConfigData.mIsRun5 = vm["isRun5"].as<bool>();
   determineActiveModules(vm["modules"].as<std::vector<std::string>>(), vm["skipModules"].as<std::vector<std::string>>(), mConfigData.mActiveModules, mConfigData.mIsRun5);
   if (mConfigData.mNoGeant) {
     // CAVE is all that's needed (and that will be built either way), so clear all modules and set the O2TrivialMCEngine

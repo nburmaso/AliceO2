@@ -31,10 +31,9 @@
 
 class TGeoPNEntry;
 
-namespace o2
+namespace o2::fct
 {
-namespace fct
-{
+
 /// GeometryTGeo is a simple interface class to TGeoManager. It is used in the simulation
 /// in order to query the TGeo FCT geometry.
 /// RS: In order to preserve the static character of the class but make it dynamically access
@@ -112,11 +111,11 @@ class GeometryTGeo : public o2::itsmft::GeometryTGeo
   static std::string sSensorName; ///< Sensor name
 
  private:
-  static std::unique_ptr<o2::fct::GeometryTGeo> sInstance; ///< singletone instance
+  static std::unique_ptr<o2::fct::GeometryTGeo> sInstance; ///< singleton instance
 
   ClassDefOverride(GeometryTGeo, 1); // FCT geometry based on TGeo
 };
-} // namespace fct
-} // namespace o2
+
+} // namespace o2::fct
 
 #endif

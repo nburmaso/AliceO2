@@ -59,10 +59,10 @@ endif()
 
 o2_data_file(COPY Geometry DESTINATION Detectors)
 
-if(ENABLE_UPGRADES)
+#if(ENABLE_UPGRADES)
   add_subdirectory(Upgrades)
-else()
-  message(STATUS "Not building detectors for upgrades")
-endif()
+#else()
+#  message(STATUS "Not building detectors for upgrades")
+#endif()
 
 add_subdirectory(GRP)

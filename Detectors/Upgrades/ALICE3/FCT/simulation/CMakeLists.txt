@@ -12,12 +12,16 @@
 o2_add_library(FCTSimulation
                SOURCES src/FCTLayer.cxx
                        src/Detector.cxx
+                       src/Digitizer.cxx
+                       src/DigitizerTask.cxx
                PUBLIC_LINK_LIBRARIES O2::FCTBase
                                      O2::ITSMFTSimulation
                                      ROOT::Physics)
 
 o2_target_root_dictionary(FCTSimulation
                           HEADERS include/FCTSimulation/Detector.h
+                                  include/FCTSimulation/Digitizer.h
+                                  include/FCTSimulation/DigitizerTask.h
                                   include/FCTSimulation/FCTLayer.h)
 
 o2_data_file(COPY data  DESTINATION Detectors/FCT/simulation)

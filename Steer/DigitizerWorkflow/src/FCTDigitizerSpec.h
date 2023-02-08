@@ -9,16 +9,16 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#ifdef __CLING__
+#ifndef STEER_DIGITIZERWORKFLOW_FCTDIGITIZER_H_
+#define STEER_DIGITIZERWORKFLOW_FCTDIGITIZER_H_
 
-#pragma link off all globals;
-#pragma link off all classes;
-#pragma link off all functions;
+#include "Framework/DataProcessorSpec.h"
 
-#pragma link C++ class o2::fct::FCTLayer + ;
-#pragma link C++ class o2::fct::Detector + ;
-#pragma link C++ class o2::fct::Digitizer + ;
-#pragma link C++ class o2::fct::DigitizerTask + ;
-#pragma link C++ class o2::base::DetImpl < o2::fct::Detector> + ;
+namespace o2::fct
+{
 
-#endif
+o2::framework::DataProcessorSpec getFCTDigitizerSpec(int channel, bool mctruth = true);
+
+} // namespace o2::fct
+
+#endif /* STEER_DIGITIZERWORKFLOW_FCTDIGITIZER_H_ */

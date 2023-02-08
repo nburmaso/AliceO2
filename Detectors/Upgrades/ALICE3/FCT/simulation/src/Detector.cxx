@@ -391,7 +391,7 @@ Bool_t Detector::ProcessHits(FairVolume* vol)
                     mTrackData.mEnergyLoss, mTrackData.mTrkStatusStart, status);
     // p->SetTotalEnergy(vmc->Etot());
 
-    // RS: not sure this is needed
+    // RS: not sure if this is needed
     // Increment number of Detector det points in TParticle
     stack->addHit(GetDetId());
   }
