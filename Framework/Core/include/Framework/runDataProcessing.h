@@ -225,36 +225,40 @@ int main(int argc, char** argv)
   using namespace o2::framework;
   using namespace boost::program_options;
 
-  static bool noCatch = true; // getenv("O2_NO_CATCHALL_EXCEPTIONS") && strcmp(getenv("O2_NO_CATCHALL_EXCEPTIONS"), "0");
   int result = 1;
-  if (noCatch) {
-    try {
-      result = mainNoCatch(argc, argv);
-    } catch (o2::framework::RuntimeErrorRef& ref) {
-      doDPLException(ref, argv[0]);
-      throw;
-    }
-  } else {
-    try {
-      // The 0 here is an int, therefore having the template matching in the
-      // SFINAE expression above fit better the version which invokes user code over
-      // the default one.
-      // The default policy is a catch all pub/sub setup to be consistent with the past.
-      result = mainNoCatch(argc, argv);
-    } catch (boost::exception& e) {
-      doBoostException(e, argv[0]);
-      throw;
-    } catch (std::exception const& error) {
-      doUnknownException(error.what(), argv[0]);
-      throw;
-    } catch (o2::framework::RuntimeErrorRef& ref) {
-      doDPLException(ref, argv[0]);
-      throw;
-    } catch (...) {
-      doUnknownException("", argv[0]);
-      throw;
-    }
-  }
+  result = mainNoCatch(argc, argv);
+
+  // fixme: return to normal when done debugging
+  //  static bool noCatch = true; // getenv("O2_NO_CATCHALL_EXCEPTIONS") && strcmp(getenv("O2_NO_CATCHALL_EXCEPTIONS"), "0");
+  //  int result = 1;
+  //  if (noCatch) {
+  //    try {
+  //      result = mainNoCatch(argc, argv);
+  //    } catch (o2::framework::RuntimeErrorRef& ref) {
+  //      doDPLException(ref, argv[0]);
+  //      throw;
+  //    }
+  //  } else {
+  //    try {
+  //      // The 0 here is an int, therefore having the template matching in the
+  //      // SFINAE expression above fit better the version which invokes user code over
+  //      // the default one.
+  //      // The default policy is a catch all pub/sub setup to be consistent with the past.
+  //      result = mainNoCatch(argc, argv);
+  //    } catch (boost::exception& e) {
+  //      doBoostException(e, argv[0]);
+  //      throw;
+  //    } catch (std::exception const& error) {
+  //      doUnknownException(error.what(), argv[0]);
+  //      throw;
+  //    } catch (o2::framework::RuntimeErrorRef& ref) {
+  //      doDPLException(ref, argv[0]);
+  //      throw;
+  //    } catch (...) {
+  //      doUnknownException("", argv[0]);
+  //      throw;
+  //    }
+  //  }
 
   char* idstring = nullptr;
   for (int argi = 0; argi < argc; argi++) {

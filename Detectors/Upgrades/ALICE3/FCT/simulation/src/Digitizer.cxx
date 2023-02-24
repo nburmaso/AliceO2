@@ -35,9 +35,19 @@ using namespace o2::fct;
 //_______________________________________________________________________
 void Digitizer::init()
 {
-  // todo: no chips
-  // mNumberOfChips = mGeometry->getNumberOfChips();
-  // mChips.resize(mNumberOfChips);
+  mNumberOfChips = mGeometry->getNumberOfChips();
+  mChips.resize(mNumberOfChips);
+  mChipIDOffsets.resize(mGeometry->mNumberOfLayers); // starting chipID for a layer
+
+  LOGP(info, "mNumberOfChips={}", mNumberOfChips);
+
+  int32_t start = 0;
+  for (int32_t i = 0; i < mGeometry->mNumberOfLayers; ++i) {
+    mChipIDOffsets[i] = start;
+    LOGP(info, "mChipIDOffsets[{}]={}", i, start);
+    start += mGeometry->mRowsX[i] * mGeometry->mRowsY[i];
+  }
+  LOGP(info, "end={}", start);
 
   // todo: no noise, no dead channels
   // for (int i = mNumberOfChips; i--;) {
@@ -51,37 +61,13 @@ void Digitizer::init()
   //   }
   // }
 
-  // importing the charge collection tables
-  // (initialized while building O2)
-  auto file = TFile::Open(mResponseFile.data());
-  if (!file) {
-    LOG(fatal) << "Cannot open response file " << mResponseFile;
-  }
-
-  mAlpSimResp[0] = *(o2::itsmft::AlpideSimResponse*)file->Get("response0");
-  mAlpSimResp[1] = *(o2::itsmft::AlpideSimResponse*)file->Get("response1");
-
-  // importing the parameters from DPLDigitizerParam.h
-  auto& doptMFT = DPLDigitizerParam::Instance();
-
-  // initializing response according to detector and back-bias value
-  if (doptMFT.Vbb == 0.0) { // for MFT
-    mAlpSimRespMFT = mAlpSimResp;
-    LOG(info) << "Choosing Vbb=0V for MFT";
-  } else if (doptMFT.Vbb == 3.0) {
-    mAlpSimRespMFT = mAlpSimResp + 1;
-    LOG(info) << "Choosing Vbb=-3V for MFT";
-  } else {
-    LOG(fatal) << "Invalid MFT back-bias value";
-  }
-
   mParams.print();
   mIRFirstSampledTF = o2::raw::HBFUtils::Instance().getFirstSampledTFIR();
 }
 
 auto Digitizer::getChipResponse(int chipID)
 {
-  return mAlpSimRespMFT;
+  return 0; // mAlpSimRespMFT;
 }
 
 //_______________________________________________________________________
@@ -89,15 +75,10 @@ void Digitizer::process(const std::vector<Hit>* hits, int evID, int srcID)
 {
   // digitize single event, the time must have been set beforehand
 
-  LOG(info) << "Digitizing " << mGeometry->getName() << " hits of entry " << evID << " from source "
-            << srcID << " at time " << mEventTime << " ROFrame= " << mNewROFrame << ")"
-            << " cont.mode: " << isContinuous()
-            << " Min/Max ROFrames " << mROFrameMin << "/" << mROFrameMax;
-
-  // is there something to flush ?
-  if (mNewROFrame > mROFrameMin) {
-    fillOutputContainer(mNewROFrame - 1); // flush out all frame preceding the new one
-  }
+  //  LOG(info) << "Digitizing " << mGeometry->getName() << " hits of entry " << evID << " from source "
+  //            << srcID << " at time " << mEventTime << " ROFrame= " << mNewROFrame << ")"
+  //            << " cont.mode: " << isContinuous()
+  //            << " Min/Max ROFrames " << mROFrameMin << "/" << mROFrameMax;
 
   int nHits = hits->size();
   std::vector<int> hitIdx(nHits);
@@ -105,16 +86,11 @@ void Digitizer::process(const std::vector<Hit>* hits, int evID, int srcID)
   // sort hits to improve memory access
   std::sort(hitIdx.begin(), hitIdx.end(),
             [hits](auto lhs, auto rhs) {
-              return (*hits)[lhs].GetDetectorID() < (*hits)[rhs].GetDetectorID();
+              return (*hits)[lhs].GetPosStart().z() < (*hits)[rhs].GetPosStart().z();
             });
+
   for (int i : hitIdx) {
     processHit((*hits)[i], mROFrameMax, evID, srcID);
-  }
-  // in the triggered mode store digits after every MC event
-  // TODO: in the real triggered mode this will not be needed, this is actually for the
-  // single event processing only
-  if (!mParams.isContinuous()) {
-    fillOutputContainer(mROFrameMax);
   }
 }
 
@@ -161,8 +137,6 @@ void Digitizer::fillOutputContainer(uint32_t frameLast)
   // make sure all buffers for extra digits are created up to the maxFrame
   getExtraDigBuffer(mROFrameMax);
 
-  fmt::print("DEBUG: mGeometry->getNumberOfChips() = {}\n", mGeometry->getNumberOfChips());
-
   LOG(info) << "Filling " << mGeometry->getName() << " digits output for RO frames " << mROFrameMin << ":"
             << frameLast;
 
@@ -178,7 +152,8 @@ void Digitizer::fillOutputContainer(uint32_t frameLast)
       if (chip.isDisabled()) {
         continue;
       }
-      chip.addNoise(mROFrameMin, mROFrameMin, &mParams);
+      // todo: add noise
+      // chip.addNoise(mROFrameMin, mROFrameMin, &mParams);
       auto& buffer = chip.getPreDigits();
       if (buffer.empty()) {
         continue;
@@ -225,6 +200,7 @@ void Digitizer::fillOutputContainer(uint32_t frameLast)
 void Digitizer::processHit(const o2::itsmft::Hit& hit, uint32_t& maxFr, int evID, int srcID)
 {
   // convert single hit to digits
+  // todo: implement digitization based on ALPIDE response simulation (see MFT simulation)
 
   float timeInROF = hit.GetTime() * sec2ns;
   if (timeInROF > 20e3) {
@@ -236,6 +212,7 @@ void Digitizer::processHit(const o2::itsmft::Hit& hit, uint32_t& maxFr, int evID
     }
     return;
   }
+
   if (isContinuous()) {
     timeInROF += mCollisionTimeWrtROF;
   }
@@ -254,148 +231,49 @@ void Digitizer::processHit(const o2::itsmft::Hit& hit, uint32_t& maxFr, int evID
     maxFr = roFrameMax; // if signal extends beyond current maxFrame, increase the latter
   }
 
+  // global position
+  math_utils::Vector3D<float> xyzGlobS(hit.GetPosStart()); // start position
+
+  // fixme: hit.GetDetectorID() is incorrect for FCT -> using this workaround to get layer ID
+  int16_t layer = -1;
+  for (int32_t i = 0; i < mGeometry->mBotLeft.size(); ++i) {
+    auto& layerBL = mGeometry->mBotLeft[i];
+    if (std::abs(xyzGlobS.z() - layerBL.z()) < 1.) {
+      layer = i;
+      break;
+    }
+  }
+
+  // local sensor position
+  math_utils::Vector3D<float> xyzBotLeft(mGeometry->mBotLeft[layer]);
+  math_utils::Vector3D<float> xyzDetS(xyzGlobS - xyzBotLeft);
+  auto rowX = static_cast<int32_t>(std::floor(xyzDetS.x() / mGeometry->mPadSizeX));
+  auto rowY = static_cast<int32_t>(std::floor(xyzDetS.y() / mGeometry->mPadSizeY));
+  // from bottom left corner (looking from IP)
+  int32_t chipID = mChipIDOffsets[layer] + rowX + rowY * mGeometry->mRowsY[layer];
+  LOGP(debug, "x={}, y={}, z={}, detZ={}, rowX={}, rowY={}, chipID={}, layer={}",
+       xyzDetS.x(), xyzDetS.y(), xyzDetS.z(), xyzBotLeft.z(), rowX, rowY, chipID, layer);
+  auto& chip = mChips[chipID];
+  chip.setChipIndex(chipID);
+
   // here we start stepping in the depth of the sensor to generate charge diffusion
   float nStepsInv = mParams.getNSimStepsInv();
-  int nSteps = mParams.getNSimSteps();
-  const auto& matrix = mGeometry->getMatrixL2G(hit.GetDetectorID());
-  math_utils::Vector3D<float> xyzLocS(matrix ^ (hit.GetPosStart())); // start position in sensor frame
-  math_utils::Vector3D<float> xyzLocE(matrix ^ (hit.GetPos()));      // end position in sensor frame
-
-  math_utils::Vector3D<float> step(xyzLocE);
-  step -= xyzLocS;
-  step *= nStepsInv; // position increment at each step
-  // the electrons will be injected in the middle of each step
-  math_utils::Vector3D<float> stepH(step * 0.5);
-  xyzLocS += stepH;
-  xyzLocE -= stepH;
-
-  int rowS = -1, colS = -1, rowE = -1, colE = -1, nSkip = 0;
-  // get entrance pixel row and col
-  while (!Segmentation::localToDetector(xyzLocS.X(), xyzLocS.Z(), rowS, colS)) { // guard-ring ?
-    if (++nSkip >= nSteps) {
-      return; // did not enter to sensitive matrix
-    }
-    xyzLocS += step;
-  }
-  // get exit pixel row and col
-  while (!Segmentation::localToDetector(xyzLocE.X(), xyzLocE.Z(), rowE, colE)) { // guard-ring ?
-    if (++nSkip >= nSteps) {
-      return; // did not enter to sensitive matrix
-    }
-    xyzLocE -= step;
-  }
-  // estimate the limiting min/max row and col where the non-0 response is possible
-  if (rowS > rowE) {
-    std::swap(rowS, rowE);
-  }
-  if (colS > colE) {
-    std::swap(colS, colE);
-  }
-  rowS -= itsmft::AlpideRespSimMat::NPix / 2;
-  rowE += itsmft::AlpideRespSimMat::NPix / 2;
-  if (rowS < 0) {
-    rowS = 0;
-  }
-  if (rowE >= Segmentation::NRows) {
-    rowE = Segmentation::NRows - 1;
-  }
-  colS -= itsmft::AlpideRespSimMat::NPix / 2;
-  colE += itsmft::AlpideRespSimMat::NPix / 2;
-  if (colS < 0) {
-    colS = 0;
-  }
-  if (colE >= Segmentation::NCols) {
-    colE = Segmentation::NCols - 1;
-  }
-  int rowSpan = rowE - rowS + 1, colSpan = colE - colS + 1; // size of plaquet where some response is expected
-
-  float respMatrix[rowSpan][colSpan]; // response accumulated here
-  std::fill(&respMatrix[0][0], &respMatrix[0][0] + rowSpan * colSpan, 0.f);
 
   float nElectrons = hit.GetEnergyLoss() * mParams.getEnergyToNElectrons(); // total number of deposited electrons
   nElectrons *= nStepsInv;                                                  // N electrons injected per step
-  if (nSkip) {
-    nSteps -= nSkip;
-  }
-  //
-  int rowPrev = -1, colPrev = -1, row, col;
-  float cRowPix = 0.f, cColPix = 0.f; // local coordinated of the current pixel center
 
-  const o2::itsmft::AlpideSimResponse* resp = getChipResponse(0); // todo: we don't have the exact geometry yet
-
-  // take into account that the AlpideSimResponse depth defintion has different min/max boundaries
-  // although the max should coincide with the surface of the epitaxial layer, which in the chip
-  // local coordinates has Y = +SensorLayerThickness/2
-
-  xyzLocS.SetY(xyzLocS.Y() + resp->getDepthMax() - Segmentation::SensorLayerThickness / 2.);
-
-  // collect charge in every pixel which might be affected by the hit
-  for (int iStep = nSteps; iStep--;) {
-    // Get the pixel ID
-    Segmentation::localToDetector(xyzLocS.X(), xyzLocS.Z(), row, col);
-    if (row != rowPrev || col != colPrev) { // update pixel and coordinates of its center
-      if (!Segmentation::detectorToLocal(row, col, cRowPix, cColPix)) {
-        continue; // should not happen
-      }
-      rowPrev = row;
-      colPrev = col;
-    }
-    bool flipCol, flipRow;
-    // note that response needs coordinates along column row (locX) (locZ) then depth (locY)
-    auto rspmat = resp->getResponse(xyzLocS.X() - cRowPix, xyzLocS.Z() - cColPix, xyzLocS.Y(), flipRow, flipCol);
-
-    xyzLocS += step;
-    if (!rspmat) {
-      continue;
-    }
-
-    for (int irow = itsmft::AlpideRespSimMat::NPix; irow--;) {
-      int rowDest = row + irow - itsmft::AlpideRespSimMat::NPix / 2 - rowS; // destination row in the respMatrix
-      if (rowDest < 0 || rowDest >= rowSpan) {
-        continue;
-      }
-      for (int icol = itsmft::AlpideRespSimMat::NPix; icol--;) {
-        int colDest = col + icol - itsmft::AlpideRespSimMat::NPix / 2 - colS; // destination column in the respMatrix
-        if (colDest < 0 || colDest >= colSpan) {
-          continue;
-        }
-        respMatrix[rowDest][colDest] += rspmat->getValue(irow, icol, flipRow, flipCol);
-      }
-    }
-  }
-
-  // fire the pixels assuming Poisson(n_response_electrons)
   o2::MCCompLabel lbl(hit.GetTrackID(), evID, srcID, false);
   auto roFrameAbs = mNewROFrame + roFrameRel;
-  for (int irow = rowSpan; irow--;) {
-    uint16_t rowIS = irow + rowS;
-    for (int icol = colSpan; icol--;) {
-      float nEleResp = respMatrix[irow][icol];
-      if (!nEleResp) {
-        continue;
-      }
-      int nEle = gRandom->Poisson(nElectrons * nEleResp); // total charge in given pixel
-      // ignore charge which have no chance to fire the pixel
-      if (nEle < mParams.getMinChargeToAccount()) {
-        continue;
-      }
-      uint16_t colIS = icol + colS;
-      // todo: no noise, no dead channels yet
-      // if (mNoiseMap && mNoiseMap->isNoisy(chipID, rowIS, colIS)) {
-      //   continue;
-      // }
-      // if (mDeadChanMap && mDeadChanMap->isNoisy(chipID, rowIS, colIS)) {
-      //   continue;
-      // }
-      //
-      registerDigits(chip, roFrameAbs, timeInROF, nFrames, rowIS, colIS, nEle, lbl);
-    }
-  }
+
+  // 1 digit per sensor
+  int32_t nEle = gRandom->Poisson(nElectrons);
+
+  registerDigits(chip, roFrameAbs, timeInROF, nFrames, rowX, rowY, nEle, lbl);
 }
 
 //________________________________________________________________________________
 void Digitizer::registerDigits(itsmft::ChipDigitsContainer& chip, uint32_t roFrame, float tInROF, int nROF,
-                               uint16_t row, uint16_t col, int nEle, o2::MCCompLabel& lbl)
+                               int32_t row, int32_t col, int nEle, o2::MCCompLabel& lbl)
 {
   // Register digits for given pixel, accounting for the possible signal contribution to
   // multiple ROFrame. The signal starts at time tInROF wrt the start of provided roFrame

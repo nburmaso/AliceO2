@@ -21,6 +21,7 @@
 #include <TGeoMatrix.h> // for TGeoHMatrix
 #include <TObject.h>    // for TObject
 #include <array>
+#include <memory>
 #include <string>
 #include <vector>
 #include "DetectorsBase/GeometryManager.h"
@@ -55,7 +56,7 @@ class GeometryTGeo : public o2::itsmft::GeometryTGeo
   {
     // get (create if needed) a unique instance of the object
     if (!sInstance) {
-      sInstance = std::unique_ptr<GeometryTGeo>(new GeometryTGeo(true, 0));
+      sInstance = std::make_unique<GeometryTGeo>(true, 0);
     }
     return sInstance.get();
   }
@@ -85,7 +86,10 @@ class GeometryTGeo : public o2::itsmft::GeometryTGeo
   void fillMatrixCache(int mask) override;
 
   /// Exract FCT parameters from TGeo
-  void Build(int loadTrans = 0) override;
+  void Build(int loadTrans) override;
+
+  Int_t extractVolumeCopy(const Char_t* name, const Char_t* prefix) const;
+  Int_t extractNumberOfLayers();
 
   void Print(Option_t* opt = "") const;
   static const char* getFCTVolPattern() { return sVolumeName.c_str(); }
@@ -99,10 +103,19 @@ class GeometryTGeo : public o2::itsmft::GeometryTGeo
   static const char* composeSymNameChip(Int_t d, Int_t lr);
   static const char* composeSymNameSensor(Int_t d, Int_t lr);
 
+  // fixme: temporary workaround, need to extract geometry in
+  //  o2::fct::GeometryTGeo::Build() (when it is defined)
+  //  for now assuming a simple grid of sensors
+  float mPadSizeX{1.f};                                ///< 1 cm
+  float mPadSizeY{1.f};                                ///< 1 cm
+  int32_t mNumberOfLayers;                             ///< number of layers
+  std::vector<int32_t> mRowsX{};                       ///< number of horizontal rows for each layer
+  std::vector<int32_t> mRowsY{};                       ///< number of vertical rows for each layer
+  std::vector<math_utils::Vector3D<float>> mBotLeft{}; ///< bottom left corner of each layer
+
  protected:
   static constexpr int MAXLAYERS = 15; ///< max number of active layers
 
-  Int_t mNumberOfLayers;               ///< number of layers
   static std::string sInnerVolumeName; ///< Mother inner volume name
   static std::string sVolumeName;      ///< Mother volume name
   static std::string sLayerName;       ///< Layer name

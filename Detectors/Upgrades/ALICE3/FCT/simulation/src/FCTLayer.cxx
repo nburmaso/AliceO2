@@ -159,6 +159,7 @@ void FCTLayer::createSquareLayer(TGeoVolume* motherVolume)
   motherVolume->AddNode(layerVol, 1, FwdLayerCombiTrans);
 }
 
+// fixme: apparently, converter layers are sensitive too???
 void FCTLayer::createConverterLayer(TGeoVolume* motherVolume)
 {
   if (mLayerNumber < 0) {

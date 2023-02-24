@@ -23,7 +23,9 @@ namespace conf
 enum SimFieldMode {
   kDefault = 0,
   kUniform = 1,
-  kCCDB = 2
+  kCCDB = 2,
+  kUpgradesU = 3, // simplified ALICE 3 setup with uniform fields
+  kUpgrades = 4   // placeholder for realistic ALICE 3 fields
 };
 
 enum TimeStampMode {
@@ -64,6 +66,8 @@ struct SimConfigData {
   TimeStampMode mTimestampMode = kNow;        // telling of timestamp was given as option or defaulted to now
   int mRunNumber = -1;                        // ALICE run number (if set != -1); the timestamp should be compatible
   int mField;                                 // L3 field setting in kGauss: +-2,+-5 and 0
+  int mA3FieldL3;                             // ALICE 3 L3 field setting in kGauss
+  int mA3FieldDP;                             // ALICE 3 Dipole (FCT) field setting in kGauss
   SimFieldMode mFieldMode = kDefault;         // uniform magnetic field
   bool mAsService = false;                    // if simulation should be run as service/deamon (does not exit after run)
   bool mNoGeant = false;                      // if Geant transport should be turned off (when one is only interested in the generated events)

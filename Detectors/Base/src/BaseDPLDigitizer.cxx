@@ -54,6 +54,8 @@ void BaseDPLDigitizer::init(o2::framework::InitContext& ic)
     }
   }
 
+  LOGP(info, "DEBUG: setting field???");
+
   // finally call specific init
   this->initDigitizerTask(ic);
 }

@@ -104,6 +104,7 @@ void build_geometry(FairRunSim* run = nullptr)
   // Create media
   run->SetMaterials("media.geo"); // Materials
 
+  LOGP(info, "Calling run->SetField(o2::base::SimFieldUtils::createMagField())");
   // we need a field to properly init the media
   run->SetField(o2::base::SimFieldUtils::createMagField());
 

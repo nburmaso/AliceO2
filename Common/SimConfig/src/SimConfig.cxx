@@ -60,6 +60,8 @@ void SimConfig::initOptions(boost::program_options::options_description& options
     "noGeant", bpo::bool_switch(), "prohibits any Geant transport/physics (by using tight cuts)")(
     "forwardKine", bpo::bool_switch(), "forward kinematics on a FairMQ channel")(
     "isRun5", bpo::bool_switch()->default_value(false), "Enable Run 5 upgrades")(
+    "A3FieldL3", bpo::value<std::string>()->default_value("-20"), "ALICE 3 L3 field setting in kGauss")(
+    "A3FieldDP", bpo::value<std::string>()->default_value("-5"), "ALICE 3 Dipole (FCT) field setting in kGauss")(
     "noDiscOutput", bpo::bool_switch(), "switch off writing sim results to disc (useful in combination with forwardKine)");
   options.add_options()("fromCollContext", bpo::value<std::string>()->default_value(""), "Use a pregenerated collision context to infer number of events to simulate, how to embedd them, the vertex position etc. Takes precedence of other options such as \"--nEvents\".");
 }
@@ -179,6 +181,7 @@ void SimConfig::determineReadoutDetectors(std::vector<std::string> const& active
 
 bool SimConfig::resetFromParsedMap(boost::program_options::variables_map const& vm)
 {
+  LOG(info) << "DEBUG: this is resetFromParsedMap()";
   using o2::detectors::DetID;
   mConfigData.mMCEngine = vm["mcEngine"].as<std::string>();
   mConfigData.mNoGeant = vm["noGeant"].as<bool>();
@@ -240,12 +243,19 @@ bool SimConfig::resetFromParsedMap(boost::program_options::variables_map const& 
   // either: "ccdb" or +-2[U],+-5[U] and 0[U]; +-<intKGaus>U
   auto& fieldstring = vm["field"].as<std::string>();
   std::regex re("(ccdb)|([+-]?[250]U?)");
-  if (!std::regex_match(fieldstring, re)) {
+  std::regex reupg("upgrades.*U?");
+  if (!std::regex_match(fieldstring, re) && !std::regex_match(fieldstring, reupg)) {
     LOG(error) << "Invalid field option";
     return false;
   }
   if (fieldstring == "ccdb") {
     mConfigData.mFieldMode = SimFieldMode::kCCDB;
+  } else if (fieldstring == "upgradesU") {
+    mConfigData.mField = 0;
+    mConfigData.mFieldMode = SimFieldMode::kUpgradesU;
+    mConfigData.mA3FieldL3 = std::stoi(vm["A3FieldL3"].as<std::string>());
+    mConfigData.mA3FieldDP = std::stoi(vm["A3FieldDP"].as<std::string>());
+    return true;
   } else if (fieldstring.find("U") != std::string::npos) {
     mConfigData.mFieldMode = SimFieldMode::kUniform;
   }

@@ -147,7 +147,7 @@ void Detector::buildFCTFromFile(std::string configFileName)
   mNumberOfLayers = layerNumber;
   LOG(info) << " Loaded FCT Detector with  " << mNumberOfLayers << " layers";
   LOG(info) << " Of which " << layerNumberDisk << " are disks";
-  LOG(info) << " Of which " << layerNumberSquare << " are disks";
+  LOG(info) << " Of which " << layerNumberSquare << " are squares";
 }
 
 //_________________________________________________________________________________________________
@@ -406,6 +406,8 @@ void Detector::createMaterials()
   Float_t fieldm = 10.0;
   o2::base::Detector::initFieldTrackingParams(ifield, fieldm);
 
+  LOGP(info, "FCT: ifield={}, fieldm={}", ifield, fieldm);
+
   Float_t tmaxfdSi = 0.1;    // .10000E+01; // Degree
   Float_t stemaxSi = 0.0075; //  .10000E+01; // cm
   Float_t deemaxSi = 0.1;    // 0.30000E-02; // Fraction of particle's energy 0<deemax<=1
@@ -500,9 +502,6 @@ void Detector::ConstructGeometry()
 //_________________________________________________________________________________________________
 void Detector::createGeometry()
 {
-
-  mGeometryTGeo = GeometryTGeo::Instance();
-
   TGeoVolume* volFCT = new TGeoVolumeAssembly(GeometryTGeo::getFCTVolPattern());
   TGeoVolume* volIFCT = new TGeoVolumeAssembly(GeometryTGeo::getFCTInnerVolPattern());
 
@@ -543,10 +542,13 @@ void Detector::createGeometry()
   }
   LOG(info) << "Registering FCT SensitiveLayerIDs:";
   for (int iLayer = 0; iLayer < mLayers.size(); iLayer++) {
-    auto layerID = gMC ? TVirtualMC::GetMC()->VolId(Form("%s_%d", GeometryTGeo::getFCTSensorPattern(), mLayers[iLayer].getLayerNumber())) : 0;
+    auto layerID = gMC ? TVirtualMC::GetMC()->VolId(Form("%s_%d", GeometryTGeo::getFCTVolPattern(), mLayers[iLayer].getLayerNumber())) : 0;
     mLayerID.push_back(layerID);
     LOG(info) << "  mLayerID[" << mLayers[iLayer].getLayerNumber() << "] = " << layerID;
   }
+
+  // fixme: ????
+  // mGeometryTGeo = GeometryTGeo::Instance();
 }
 
 //_________________________________________________________________________________________________
@@ -565,6 +567,8 @@ void Detector::defineSensitiveVolumes()
     LOG(info) << "Adding FCT Sensitive Volume => " << v->GetName();
     AddSensitiveVolume(v);
   }
+
+  LOG(info) << "Added FCT Sensitive Volumes";
 }
 
 //_________________________________________________________________________________________________

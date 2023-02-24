@@ -18,7 +18,6 @@
 #pragma link C++ class o2::fct::FCTLayer + ;
 #pragma link C++ class o2::fct::Detector + ;
 #pragma link C++ class o2::fct::Digitizer + ;
-#pragma link C++ class o2::fct::DigitizerTask + ;
 #pragma link C++ class o2::base::DetImpl < o2::fct::Detector> + ;
 
 #endif

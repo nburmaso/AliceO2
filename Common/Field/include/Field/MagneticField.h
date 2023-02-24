@@ -72,6 +72,11 @@ class MagneticField : public FairField
   /// create field from rounded value, i.e. +-5 or +-2 kGauss
   static MagneticField* createNominalField(int fld, bool uniform = false);
 
+  /// create field for ALICE 3 setup
+  /// fldL3: L3 (constant) field
+  /// fldDP: FCT (constant) dipole field
+  static MagneticField* createNominalFieldUpgrades(int fldL3, int fldDP);
+
   /// real field creation is here
   void CreateField();
 
@@ -275,6 +280,8 @@ class MagneticField : public FairField
 
   static const Double_t sSolenoidToDipoleZ;  ///< conventional Z of transition from L3 to Dipole field
   static const UShort_t sPolarityConvention; ///< convention for the mapping of the curr.sign on main component sign
+
+  static const Double_t sA3SolenoidToDipoleZ; ///< Z of transition from L3 to Dipole field in ALICE 3 setup
 
   MagneticField(const MagneticField& src);
 

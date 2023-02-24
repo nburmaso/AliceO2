@@ -59,6 +59,7 @@ endif()
 
 o2_data_file(COPY Geometry DESTINATION Detectors)
 
+# todo: uncomment!
 #if(ENABLE_UPGRADES)
   add_subdirectory(Upgrades)
 #else()

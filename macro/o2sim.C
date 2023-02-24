@@ -131,6 +131,7 @@ FairRunSim* o2sim_init(bool asservice, bool evalmat = false)
   auto flg = TGeoManager::LockDefaultUnits(false);
   TGeoManager::SetDefaultUnits(TGeoManager::kRootUnits);
   TGeoManager::LockDefaultUnits(flg);
+  LOG(info) << "Calling build_geometry()";
   build_geometry(run);
 
   // setup generator

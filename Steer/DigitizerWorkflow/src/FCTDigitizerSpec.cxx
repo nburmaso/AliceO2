@@ -238,9 +238,11 @@ class FCTDPLDigitizerTask : BaseDPLDigitizer
               << " RO mode";
 
     // configure digitizer
-    o2::fct::GeometryTGeo* geom = nullptr;
-    geom = o2::fct::GeometryTGeo::Instance();
-    geom->fillMatrixCache(o2::math_utils::bit2Mask(o2::math_utils::TransformType::L2G)); // make sure L2G matrices are loaded
+    o2::fct::GeometryTGeo* geom = o2::fct::GeometryTGeo::Instance();
+
+    // fixme: transform matrix is not implemented!
+    // geom->fillMatrixCache(o2::math_utils::bit2Mask(o2::math_utils::TransformType::L2G)); // make sure L2G matrices are loaded
+
     mDigitizer.setGeometry(geom);
     mDigitizer.init();
   }

@@ -35,6 +35,7 @@ class MagFieldParam : public FairParGenericSet
     k2kG,
     k5kG,
     k5kGUniform,
+    kALICE3Uniform, // ALICE 3 fields
     kNFieldTypes
   };
   enum BeamType_t {

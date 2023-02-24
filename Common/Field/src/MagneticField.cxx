@@ -14,9 +14,9 @@
 /// \author ruben.shahoyan@cern.ch
 
 #include "Field/MagneticField.h"
-#include <TFile.h>      // for TFile
-#include <TPRegexp.h>   // for TPRegexp
-#include <TSystem.h>    // for TSystem, gSystem
+#include <TFile.h>             // for TFile
+#include <TPRegexp.h>          // for TPRegexp
+#include <TSystem.h>           // for TSystem, gSystem
 #include <fairlogger/Logger.h> // for FairLogger
 #include "FairParamList.h"
 #include "FairRun.h"
@@ -27,6 +27,7 @@ using namespace o2::field;
 ClassImp(MagneticField);
 
 const Double_t MagneticField::sSolenoidToDipoleZ = -700.;
+const Double_t MagneticField::sA3SolenoidToDipoleZ = -430.; // fixme: get a precise value?
 
 /// Explanation for polarity conventions: these are the mapping between the
 /// current signs and main field components in L3 (Bz) and Dipole (Bx) (in Alice frame)
@@ -178,6 +179,14 @@ MagneticField* MagneticField::createNominalField(int fld, bool uniform)
   return new o2::field::MagneticField("Maps", "Maps", fldCoeffL3, fldCoeffDip, fldType);
 }
 
+MagneticField* MagneticField::createNominalFieldUpgrades(int fldL3, int fldDP)
+{
+  auto fldCoeffL3 = static_cast<float>(fldL3);
+  float fldCoeffDip = fldL3 > 0 ? std::abs(fldDP) : -std::abs(fldDP);
+  o2::field::MagFieldParam::BMap_t fldType = o2::field::MagFieldParam::kALICE3Uniform;
+  return new o2::field::MagneticField("Maps", "Maps", static_cast<float>(fldCoeffL3), static_cast<float>(fldCoeffDip), fldType);
+}
+
 void MagneticField::CreateField()
 {
   /*
@@ -215,6 +224,8 @@ void MagneticField::CreateField()
   } else if (mMapType == MagFieldParam::k5kG) {
     parname = mDipoleOnOffFlag ? "Sol30_Dip0_Hole" : "Sol30_Dip6_Hole";
   } else if (mMapType == MagFieldParam::k5kGUniform) {
+    parname = "Sol30_Dip6_Uniform";
+  } else if (mMapType == MagFieldParam::kALICE3Uniform) {
     parname = "Sol30_Dip6_Uniform";
   } else {
     LOG(fatal) << "MagneticField::CreateField: Unknown field identifier " << mMapType << " is requested\n";
@@ -270,6 +281,19 @@ void MagneticField::Field(const Double_t* __restrict__ xyz, Double_t* __restrict
     return;
   }
 
+  if (mMapType == o2::field::MagFieldParam::kALICE3Uniform) { // ALICE 3 field
+    if (xyz[2] > sA3SolenoidToDipoleZ) {
+      b[0] = 0.;
+      b[1] = 0.;
+      b[2] = mMultipicativeFactorSolenoid;
+    } else {
+      b[0] = mMultipicativeFactorDipole;
+      b[1] = 0.;
+      b[2] = 0.;
+    }
+    return;
+  }
+
   if (mMeasuredMap && xyz[2] > mMeasuredMap->getMinZ() && xyz[2] < mMeasuredMap->getMaxZ()) {
     mMeasuredMap->Field(xyz, b);
     if (xyz[2] > sSolenoidToDipoleZ || mDipoleOnOffFlag) {
@@ -296,6 +320,13 @@ Double_t MagneticField::getBz(const Double_t* xyz) const
     double bz = 0;
     if (mFastField->GetBz(xyz, bz)) {
       return bz;
+    }
+  }
+  if (mMapType == o2::field::MagFieldParam::kALICE3Uniform) { // ALICE 3 field
+    if (xyz[2] > sA3SolenoidToDipoleZ) {
+      return mMultipicativeFactorSolenoid;
+    } else {
+      return 0.;
     }
   }
   if (mMeasuredMap && xyz[2] > mMeasuredMap->getMinZ() && xyz[2] < mMeasuredMap->getMaxZ()) {
@@ -548,10 +579,15 @@ void MagneticField::rescaleField(float l3Cur, float diCur, bool uniform, int con
 
 MagFieldParam::BMap_t MagneticField::getFieldMapScale(float& l3, float& dip, bool uniform, int convention)
 {
+  LOGP(info, "l3={}, dip={}, uniform={}", l3, dip, uniform);
+
   // this function taks as input magnet currents and returns the field type and scalings for L3 and dipole
   const float l3NominalCurrent1 = 30000.f; // (A)
   const float l3NominalCurrent2 = 12000.f; // (A)
   const float diNominalCurrent = 6000.f;   // (A)
+
+  const float l3NominalCurrentA3 = 600000.f; // (A)
+  const float diNominalCurrentA3 = 30000.f;  // (A)
 
   const float tolerance = 0.03; // relative current tolerance
   const float zero = 77.f;      // "zero" current (A)
@@ -564,6 +600,11 @@ MagFieldParam::BMap_t MagneticField::getFieldMapScale(float& l3, float& dip, boo
 
   l3 = TMath::Abs(l3);
   dip = TMath::Abs(dip);
+
+  if (TMath::Abs((sclL3 = l3 / l3NominalCurrentA3) - 1.) < tolerance) {
+    map = MagFieldParam::kALICE3Uniform;
+    return map;
+  }
 
   if (TMath::Abs((sclDip = dip / diNominalCurrent) - 1.) > tolerance && !uniform) {
     if (dip <= zero) {

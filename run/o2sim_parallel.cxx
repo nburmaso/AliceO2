@@ -367,9 +367,9 @@ int main(int argc, char* argv[])
   auto externalpublishchannel = o2::simpubsub::createPUBChannel(o2::simpubsub::getPublishAddress("o2sim-notifications"));
 
   auto& conf = o2::conf::SimConfig::Instance();
-#ifdef SIM_RUN5
-  conf.setRun5();
-#endif
+  // #ifdef SIM_RUN5
+  //   conf.setRun5();
+  // #endif
   if (!conf.resetFromArguments(argc, argv)) {
     return 1;
   }

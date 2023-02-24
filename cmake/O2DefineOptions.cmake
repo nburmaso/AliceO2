@@ -25,13 +25,14 @@ function(o2_define_options)
   option(ENABLE_CASSERT "Enable asserts" OFF)
 
   option(
-    BUILD_SIMULATION_DEFAULT
-    "Default behavior for simulation (disregarded if BUILD_SIMULATION is defined)"
-    ON)
+          BUILD_SIMULATION_DEFAULT
+          "Default behavior for simulation (disregarded if BUILD_SIMULATION is defined)"
+          ON)
   # for the complete picture of how BUILD_SIMULATION is handled see
   # ../dependencies/O2SimulationDependencies.cmake
 
-  option(ENABLE_UPGRADES "Enable detectors for upgrades" OFF)
+  # todo: switch back
+  option(ENABLE_UPGRADES "Enable detectors for upgrades" ON)
 
   option(ENABLE_THREAD_SAFETY_ANALYSIS "Enable thread safety analysis" OFF)
 endfunction()

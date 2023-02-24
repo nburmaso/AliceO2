@@ -22,6 +22,7 @@ o2::field::MagneticField* const SimFieldUtils::createMagField()
   auto& confref = o2::conf::SimConfig::Instance();
   // a) take field from CDDB
   const auto fieldmode = confref.getConfigData().mFieldMode;
+  LOGP(info, "fieldmode={}", fieldmode);
   o2::field::MagneticField* field = nullptr;
   if (fieldmode == o2::conf::SimFieldMode::kCCDB) {
     LOG(info) << "Fetching magnetic field from CCDB";
@@ -31,8 +32,16 @@ o2::field::MagneticField* const SimFieldUtils::createMagField()
     field = o2::field::MagneticField::createFieldMap(grpmagfield->getL3Current(), grpmagfield->getDipoleCurrent(), grpmagfield->getFieldUniformity());
   }
   // b) using the given values on the command line
-  else {
+  else if (fieldmode == o2::conf::SimFieldMode::kUniform || fieldmode == o2::conf::SimFieldMode::kDefault) {
     field = o2::field::MagneticField::createNominalField(confref.getConfigData().mField, confref.getConfigData().mFieldMode == o2::conf::SimFieldMode::kUniform);
   }
+#ifdef ENABLE_UPGRADES
+  // c) using very simple setup with uniform fields for ALICE 3 simulation
+  else if (fieldmode == o2::conf::SimFieldMode::kUpgradesU) {
+    field = o2::field::MagneticField::createNominalFieldUpgrades(confref.getConfigData().mA3FieldL3, confref.getConfigData().mA3FieldDP);
+  }
+  // d) using realistic fields for ALICE 3 simulation
+  // else if (fieldmode == o2::conf::SimFieldMode::kUpgrades) { }
+#endif
   return field;
 }

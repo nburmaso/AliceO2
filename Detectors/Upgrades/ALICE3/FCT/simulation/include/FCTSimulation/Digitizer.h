@@ -95,7 +95,7 @@ class Digitizer : public TObject
  private:
   void processHit(const o2::itsmft::Hit& hit, uint32_t& maxFr, int evID, int srcID);
   void registerDigits(itsmft::ChipDigitsContainer& chip, uint32_t roFrame, float tInROF, int nROF,
-                      uint16_t row, uint16_t col, int nEle, o2::MCCompLabel& lbl);
+                      int32_t row, int32_t col, int nEle, o2::MCCompLabel& lbl);
 
   ExtraDig* getExtraDigBuffer(uint32_t roFrame)
   {
@@ -123,9 +123,10 @@ class Digitizer : public TObject
   uint32_t mEventROFrameMax = 0;          ///< highest RO frame forfor processed events (w/o automatic noise ROFs)
 
   int mNumberOfChips = 0;
-  o2::itsmft::AlpideSimResponse* mAlpSimRespMFT = nullptr;
-  o2::itsmft::AlpideSimResponse mAlpSimResp[2]; // simulated response
-  std::string mResponseFile = "$(O2_ROOT)/share/Detectors/ITSMFT/data/AlpideResponseData/AlpideResponseData.root";
+  std::vector<int32_t> mChipIDOffsets;
+  //  o2::itsmft::AlpideSimResponse* mAlpSimRespMFT = nullptr;
+  //  o2::itsmft::AlpideSimResponse mAlpSimResp[2]; // simulated response
+  //  std::string mResponseFile = "$(O2_ROOT)/share/Detectors/ITSMFT/data/AlpideResponseData/AlpideResponseData.root";
   const o2::fct::GeometryTGeo* mGeometry = nullptr; ///< ITS OR MFT upgrade geometry
 
   std::vector<o2::itsmft::ChipDigitsContainer> mChips; ///< Array of chips digits containers

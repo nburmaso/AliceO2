@@ -84,6 +84,7 @@ void GeneratorFactory::setPrimaryGenerator(o2::conf::SimConfig const& conf, Fair
   o2::O2DatabasePDG::addALICEParticles(TDatabasePDG::Instance());
   auto genconfig = conf.getGenerator();
   if (genconfig.compare("boxgen") == 0) {
+    gRandom->SetSeed(1);
     // a simple "box" generator configurable via BoxGunparam
     auto& boxparam = BoxGunParam::Instance();
     LOG(info) << "Init generic box generator with following parameters";
